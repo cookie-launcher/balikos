@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE wallpapers SYSTEM "gnome-wp-list.dtd">
+<wallpapers>
+  <wallpaper deleted="false">
+    <name>BalıkOS Sürü</name>
+    <filename>/usr/share/backgrounds/balikos/balikos-suru.png</filename>
+    <options>zoom</options>
+    <shade_type>solid</shade_type>
+    <pcolor>#050b14</pcolor>
+    <scolor>#0a1a2f</scolor>
+  </wallpaper>
+  <wallpaper deleted="false">
+    <name>BalıkOS Derinlik</name>
+    <filename>/usr/share/backgrounds/balikos/balikos-derinlik.png</filename>
+    <options>zoom</options>
+    <shade_type>solid</shade_type>
+    <pcolor>#050b14</pcolor>
+    <scolor>#0a1a2f</scolor>
+  </wallpaper>
+  <wallpaper deleted="false">
+    <name>BalıkOS Akıntı</name>
+    <filename>/usr/share/backgrounds/balikos/balikos-akinti.png</filename>
+    <options>zoom</options>
+    <shade_type>solid</shade_type>
+    <pcolor>#050b14</pcolor>
+    <scolor>#0a1a2f</scolor>
+  </wallpaper>
+  <wallpaper deleted="false">
+    <name>BalıkOS Şafak</name>
+    <filename>/usr/share/backgrounds/balikos/balikos-safak.png</filename>
+    <options>zoom</options>
+    <shade_type>solid</shade_type>
+    <pcolor>#050b14</pcolor>
+    <scolor>#0a1a2f</scolor>
+  </wallpaper>
+</wallpapers>

@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""BalıkOS Store: a small GTK package browser plus Bazaar integration."""
+"""BalıkOS Store: a focused GTK package browser with Bazaar integration."""
 
 from __future__ import annotations
 
+import os
 import re
+import shutil
 import subprocess
 import sys
 import threading
@@ -11,18 +13,25 @@ import threading
 import gi
 
 gi.require_version("Gtk", "4.0")
-from gi.repository import GLib, Gtk  # noqa: E402
+from gi.repository import Gio, GLib, Gtk  # noqa: E402
 
 PACKAGE_RE = re.compile(r"^[a-z0-9@._+-]+/[a-z0-9@._+-]+ [^ ]+")
-DESKTOP_APPS = {
-    "bazaar": ["bazaar"],
-    "flatpak": ["flatpak", "run", "io.github.kolunmi.Bazaar"],
-}
+CATEGORIES = (
+    ("Tarayıcı", "firefox"),
+    ("Ofis", "libreoffice"),
+    ("Medya", "vlc"),
+    ("Geliştirici", "code"),
+    ("Oyun", "steam"),
+)
+BAZAAR = (
+    ["bazaar"],
+    ["flatpak", "run", "io.github.kolunmi.Bazaar"],
+)
 
 
-def run_command(argv: list[str]) -> tuple[int, str]:
+def run_command(argv: list[str], timeout: int = 900) -> tuple[int, str]:
     try:
-        proc = subprocess.run(argv, text=True, capture_output=True, timeout=120)
+        proc = subprocess.run(argv, text=True, capture_output=True, timeout=timeout)
         return proc.returncode, (proc.stdout or "") + (proc.stderr or "")
     except (OSError, subprocess.TimeoutExpired) as exc:
         return 1, str(exc)
@@ -31,7 +40,7 @@ def run_command(argv: list[str]) -> tuple[int, str]:
 def search_packages(query: str) -> list[tuple[str, str]]:
     if not query.strip():
         return []
-    code, output = run_command(["pacman", "-Ss", query])
+    code, output = run_command(["pacman", "-Ss", query], timeout=120)
     if code != 0:
         return []
     lines = output.splitlines()
@@ -50,50 +59,114 @@ def search_packages(query: str) -> list[tuple[str, str]]:
     return results[:80]
 
 
+def privileged_pacman(name: str) -> tuple[int, str]:
+    """Install a package in the live session or on an installed system."""
+    if os.geteuid() == 0:
+        return run_command(["pacman", "-S", "--needed", "--noconfirm", name])
+    # The live ISO grants passwordless sudo to liveuser; installed systems
+    # normally use the polkit agent through pkexec.
+    if shutil.which("sudo"):
+        code, output = run_command(
+            ["sudo", "-n", "pacman", "-S", "--needed", "--noconfirm", name])
+        if code == 0:
+            return code, output
+    if shutil.which("pkexec"):
+        return run_command(["pkexec", "pacman", "-S", "--needed", "--noconfirm", name])
+    return 1, "neither sudo nor pkexec is available"
+
+
 class StoreWindow(Gtk.ApplicationWindow):
     def __init__(self, app: Gtk.Application) -> None:
         super().__init__(application=app, title="BalıkOS Mağaza")
-        self.set_default_size(820, 620)
+        self.set_default_size(940, 700)
 
         header = Gtk.HeaderBar()
         header.set_title_widget(Gtk.Label(label="BalıkOS Mağaza"))
         self.set_titlebar(header)
 
-        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        outer.set_margin_top(18)
-        outer.set_margin_bottom(18)
-        outer.set_margin_start(18)
-        outer.set_margin_end(18)
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        outer.set_margin_top(20)
+        outer.set_margin_bottom(20)
+        outer.set_margin_start(22)
+        outer.set_margin_end(22)
         self.set_child(outer)
 
-        top = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        outer.append(top)
+        hero = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=18)
+        hero.add_css_class("card")
+        hero.set_margin_bottom(2)
+        outer.append(hero)
+
+        logo = Gtk.Image.new_from_file("/usr/share/pixmaps/balikos-logo.png")
+        logo.set_pixel_size(88)
+        logo.set_valign(Gtk.Align.CENTER)
+        logo.set_margin_top(18)
+        logo.set_margin_bottom(18)
+        logo.set_margin_start(18)
+        hero.append(logo)
+
+        intro = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
+        intro.set_valign(Gtk.Align.CENTER)
+        intro.set_hexpand(True)
+        title = Gtk.Label(label="BalıkOS Mağaza")
+        title.set_xalign(0)
+        title.add_css_class("title-2")
+        subtitle = Gtk.Label(label="Binlerce Arch ve CachyOS paketi, tek tıkla.")
+        subtitle.set_xalign(0)
+        subtitle.add_css_class("dim-label")
+        intro.append(title)
+        intro.append(subtitle)
+        hero.append(intro)
+
+        bazaar = Gtk.Button(label="Bazaar'ı Aç")
+        bazaar.add_css_class("suggested-action")
+        bazaar.set_valign(Gtk.Align.CENTER)
+        bazaar.set_margin_end(18)
+        bazaar.connect("clicked", self.open_bazaar)
+        hero.append(bazaar)
+
+        search_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        outer.append(search_row)
         self.search = Gtk.SearchEntry()
-        self.search.set_placeholder_text("Paket ara…")
+        self.search.set_placeholder_text("Paket ara… (ör. gimp, firefox, blender)")
         self.search.set_hexpand(True)
         self.search.connect("activate", self.on_search)
-        top.append(self.search)
+        search_row.append(self.search)
         search_button = Gtk.Button(label="Ara")
+        search_button.add_css_class("suggested-action")
         search_button.connect("clicked", self.on_search)
-        top.append(search_button)
-        bazaar = Gtk.Button(label="Bazaar")
-        bazaar.connect("clicked", self.open_bazaar)
-        top.append(bazaar)
+        search_row.append(search_button)
 
-        self.status = Gtk.Label(label="Bir paket arayın veya Bazaar'a geçin.")
+        chips = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        chips.set_margin_top(2)
+        outer.append(chips)
+        for label, query in CATEGORIES:
+            chip = Gtk.Button(label=label)
+            chip.add_css_class("pill")
+            chip.connect("clicked", self.on_chip, query)
+            chips.append(chip)
+
+        self.status = Gtk.Label(label="Bir paket arayın veya bir kategori seçin.")
         self.status.set_xalign(0)
+        self.status.add_css_class("dim-label")
         outer.append(self.status)
 
         scroller = Gtk.ScrolledWindow()
         scroller.set_vexpand(True)
+        scroller.set_has_frame(True)
         outer.append(scroller)
         self.listbox = Gtk.ListBox()
         self.listbox.set_selection_mode(Gtk.SelectionMode.NONE)
         scroller.set_child(self.listbox)
 
+        self._show_empty()
+
+    def on_chip(self, _button: Gtk.Button, query: str) -> None:
+        self.search.set_text(query)
+        self.on_search()
+
     def on_search(self, *_args: object) -> None:
         query = self.search.get_text()
-        self.status.set_text("Aranıyor…")
+        self.status.set_text(f"“{query}” aranıyor…")
         self.clear()
         threading.Thread(target=self._search_worker, args=(query,), daemon=True).start()
 
@@ -108,24 +181,49 @@ class StoreWindow(Gtk.ApplicationWindow):
             self.listbox.remove(child)
             child = nxt
 
+    def _show_empty(self) -> None:
+        self.clear()
+        row = Gtk.ListBoxRow()
+        row.set_activatable(False)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        box.set_margin_top(32)
+        box.set_margin_bottom(32)
+        box.set_halign(Gtk.Align.CENTER)
+        icon = Gtk.Image.new_from_icon_name("system-software-install")
+        icon.set_pixel_size(52)
+        icon.add_css_class("dim-label")
+        text = Gtk.Label(label="Aramaya hazır")
+        text.add_css_class("title-4")
+        hint = Gtk.Label(
+            label="Paket adını yazın; kurulum için sudo veya polkit kullanılır.")
+        hint.add_css_class("dim-label")
+        hint.set_wrap(True)
+        hint.set_max_width_chars(54)
+        box.append(icon)
+        box.append(text)
+        box.append(hint)
+        row.set_child(box)
+        self.listbox.append(row)
+
     def _show_results(self, results: list[tuple[str, str]]) -> bool:
         self.clear()
         if not results:
-            self.status.set_text("Sonuç bulunamadı.")
+            self.status.set_text("Sonuç bulunamadı. Paket adını tam yazmayı deneyin.")
+            self._show_empty()
             return False
         self.status.set_text(f"{len(results)} sonuç")
         for name, description in results:
             row = Gtk.ListBoxRow()
-            box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-            box.set_margin_top(8)
-            box.set_margin_bottom(8)
-            box.set_margin_start(8)
-            box.set_margin_end(8)
+            box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
+            box.set_margin_top(10)
+            box.set_margin_bottom(10)
+            box.set_margin_start(12)
+            box.set_margin_end(12)
             text = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
             title = Gtk.Label(label=name)
             title.set_xalign(0)
             title.add_css_class("heading")
-            desc = Gtk.Label(label=description)
+            desc = Gtk.Label(label=description or "Açıklama yok")
             desc.set_xalign(0)
             desc.set_wrap(True)
             desc.add_css_class("dim-label")
@@ -140,30 +238,41 @@ class StoreWindow(Gtk.ApplicationWindow):
             self.listbox.append(row)
         return False
 
-    def install_package(self, _button: Gtk.Button, name: str) -> None:
+    def install_package(self, button: Gtk.Button, name: str) -> None:
+        button.set_sensitive(False)
         self.status.set_text(f"{name} kuruluyor…")
-        argv = ["pkexec", "pacman", "-S", "--noconfirm", name]
-        threading.Thread(target=self._install_worker, args=(argv,), daemon=True).start()
+        threading.Thread(
+            target=self._install_worker, args=(name, button), daemon=True).start()
 
-    def _install_worker(self, argv: list[str]) -> None:
-        code, output = run_command(argv)
-        message = f"{argv[-1]} kuruldu." if code == 0 else f"Kurulum başarısız: {output.strip()[:300]}"
-        GLib.idle_add(self.status.set_text, message)
+    def _install_worker(self, name: str, button: Gtk.Button) -> None:
+        code, output = privileged_pacman(name)
+        if code == 0:
+            message = f"{name} kuruldu."
+        else:
+            message = f"{name} kurulamadı: {output.strip()[-300:]}"
+        GLib.idle_add(self._finish_install, message, button)
+
+    def _finish_install(self, message: str, button: Gtk.Button) -> bool:
+        self.status.set_text(message)
+        button.set_sensitive(True)
+        return False
 
     def open_bazaar(self, *_args: object) -> None:
-        for argv in DESKTOP_APPS.values():
+        for argv in BAZAAR:
             try:
                 subprocess.Popen(argv, start_new_session=True)
                 self.status.set_text("Bazaar açılıyor…")
                 return
             except OSError:
                 continue
-        self.status.set_text("Bazaar bulunamadı. `flatpak install flathub io.github.kolunmi.Bazaar` deneyin.")
+        self.status.set_text(
+            "Bazaar bulunamadı. Flatpak ile kurmak için: flatpak install flathub io.github.kolunmi.Bazaar")
 
 
 class StoreApp(Gtk.Application):
     def __init__(self) -> None:
-        super().__init__(application_id="org.balikos.Store", flags=Gtk.ApplicationFlags.DEFAULT_FLAGS)
+        super().__init__(application_id="org.balikos.Store",
+                         flags=Gio.ApplicationFlags.DEFAULT_FLAGS)
 
     def do_activate(self) -> None:
         window = self.get_active_window()

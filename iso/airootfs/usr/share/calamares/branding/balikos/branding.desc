@@ -48,7 +48,7 @@ windowExpanding:    normal
 # This setting is ignored if "fullscreen" is selected for
 # *windowExpanding*, above. If not set, use constants defined
 # in CalamaresUtilsGui, 800x520.
-windowSize: 1100px,520px
+windowSize: 960px,560px
 
 # Placement of Calamares window. Either "center" or "free".
 # Whether "center" actually works does depend on the window
@@ -123,10 +123,10 @@ navigation: widget
 strings:
     productName:         BalıkOS
     shortProductName:    BalıkOS
-    version:             2026.10.24
-    shortVersion:        2026.10
-    versionedName:       BalıkOS 2026.10.24
-    shortVersionedName:  BalıkOS 2026.10
+    version:             1.0
+    shortVersion:        1.0
+    versionedName:       BalıkOS 1.0
+    shortVersionedName:  BalıkOS 1.0
     bootloaderEntryName: BalıkOS
 
 # These images are loaded from the branding module directory.

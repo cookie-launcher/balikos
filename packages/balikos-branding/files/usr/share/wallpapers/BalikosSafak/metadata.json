@@ -1,0 +1,15 @@
+{
+  "KPlugin": {
+    "Id": "BalikosSafak",
+    "Name": "BalıkOS Şafak",
+    "Description": "Yeni bir gün için sade, aydınlık bir başlangıç.",
+    "License": "MIT",
+    "Authors": [
+      {
+        "Name": "BalıkOS"
+      }
+    ],
+    "Version": "1.0"
+  },
+  "X-KDE-PluginInfo-Name": "BalikosSafak"
+}

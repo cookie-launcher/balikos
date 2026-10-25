@@ -1,0 +1,15 @@
+{
+  "KPlugin": {
+    "Id": "BalikosSuru",
+    "Name": "BalıkOS Sürü",
+    "Description": "Bir yön, bir sürü. BalıkOS varsayılan duvar kağıdı.",
+    "License": "MIT",
+    "Authors": [
+      {
+        "Name": "BalıkOS"
+      }
+    ],
+    "Version": "1.0"
+  },
+  "X-KDE-PluginInfo-Name": "BalikosSuru"
+}

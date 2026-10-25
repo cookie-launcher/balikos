@@ -74,8 +74,12 @@ class HelloWindow(Gtk.ApplicationWindow):
         box.append(actions)
 
         update = Gtk.Button(label="Sistem Güncelle")
-        update.connect("clicked", lambda *_: launch(["pkexec", "balikos-updater", "--check"]))
+        update.connect("clicked", lambda *_: launch(["balikos-updater", "--check"]))
         actions.append(update)
+
+        wallpaper = Gtk.Button(label="Duvar Kağıtları")
+        wallpaper.connect("clicked", lambda *_: launch(["balikos-wallpapers"]))
+        actions.append(wallpaper)
 
         store = Gtk.Button(label="BalıkOS Mağaza")
         store.connect("clicked", lambda *_: launch(["balikos-store"]))

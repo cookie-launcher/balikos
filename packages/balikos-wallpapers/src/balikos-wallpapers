@@ -1,0 +1,181 @@
+#!/usr/bin/env python3
+"""BalıkOS Duvar Kağıtları: preview and apply the bundled wallpaper set."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+from pathlib import Path
+
+import gi
+
+gi.require_version("Gtk", "4.0")
+from gi.repository import Gio, Gtk  # noqa: E402
+
+WALLPAPER_DIR = Path("/usr/share/backgrounds/balikos")
+WALLPAPERS = (
+    ("balikos-suru.png", "Sürü", "Bir yön, bir sürü. Varsayılan BalıkOS duvar kağıdı."),
+    ("balikos-derinlik.png", "Derinlik", "Sakin, koyu ve odaklanmaya yer bırakan bir derinlik."),
+    ("balikos-akinti.png", "Akıntı", "Yumuşak mavi akışlar ve katmanlı bir ufuk."),
+    ("balikos-safak.png", "Şafak", "Yeni bir gün için sade, aydınlık bir başlangıç."),
+)
+
+
+def gsettings(args: list[str]) -> tuple[int, str]:
+    try:
+        proc = subprocess.run(["gsettings", *args], text=True, capture_output=True, timeout=20)
+        return proc.returncode, (proc.stdout or "") + (proc.stderr or "")
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return 1, str(exc)
+
+
+def current_wallpaper() -> str:
+    code, out = gsettings(["get", "org.gnome.desktop.background", "picture-uri"])
+    if code != 0:
+        return ""
+    value = out.strip().strip("'")
+    return value.removeprefix("file://")
+
+
+class WallpaperWindow(Gtk.ApplicationWindow):
+    def __init__(self, app: Gtk.Application) -> None:
+        super().__init__(application=app, title="BalıkOS Duvar Kağıtları")
+        self.set_default_size(920, 760)
+
+        header = Gtk.HeaderBar()
+        header.set_title_widget(Gtk.Label(label="BalıkOS Duvar Kağıtları"))
+        self.set_titlebar(header)
+
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        outer.set_margin_top(22)
+        outer.set_margin_bottom(22)
+        outer.set_margin_start(22)
+        outer.set_margin_end(22)
+        self.set_child(outer)
+
+        title = Gtk.Label(label="Masanıza bir derinlik katın")
+        title.set_xalign(0)
+        title.add_css_class("title-1")
+        outer.append(title)
+
+        subtitle = Gtk.Label(
+            label="BalıkOS ile gelen dört duvar kağıdı. Seçin, anında uygulanır.")
+        subtitle.set_xalign(0)
+        subtitle.add_css_class("dim-label")
+        outer.append(subtitle)
+
+        self.status = Gtk.Label(label="")
+        self.status.set_xalign(0)
+        self.status.add_css_class("dim-label")
+        outer.append(self.status)
+
+        scroller = Gtk.ScrolledWindow()
+        scroller.set_vexpand(True)
+        outer.append(scroller)
+
+        flow = Gtk.FlowBox()
+        flow.set_selection_mode(Gtk.SelectionMode.NONE)
+        flow.set_max_children_per_line(2)
+        flow.set_min_children_per_line(2)
+        flow.set_column_spacing(16)
+        flow.set_row_spacing(16)
+        flow.set_homogeneous(True)
+        scroller.set_child(flow)
+        self.flow = flow
+
+        self.current = current_wallpaper()
+        for filename, name, description in WALLPAPERS:
+            flow.append(self.card(filename, name, description))
+
+        foot = Gtk.Label(label="Duvar kağıtları /usr/share/backgrounds/balikos altında.")
+        foot.set_xalign(0)
+        foot.add_css_class("dim-label")
+        outer.append(foot)
+
+    def reload_cards(self) -> None:
+        child = self.flow.get_first_child()
+        while child is not None:
+            nxt = child.get_next_sibling()
+            self.flow.remove(child)
+            child = nxt
+        for filename, name, description in WALLPAPERS:
+            self.flow.append(self.card(filename, name, description))
+
+    def card(self, filename: str, name: str, description: str) -> Gtk.Widget:
+        path = WALLPAPER_DIR / filename
+        card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        card.add_css_class("card")
+        card.set_margin_top(2)
+        card.set_margin_bottom(2)
+
+        picture = Gtk.Picture.new_for_filename(str(path))
+        picture.set_can_shrink(True)
+        picture.set_size_request(380, 214)
+        picture.set_content_fit(Gtk.ContentFit.COVER)
+        card.append(picture)
+
+        text = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        text.set_margin_start(14)
+        text.set_margin_end(14)
+        text.set_margin_top(8)
+        title = Gtk.Label(label=name)
+        title.set_xalign(0)
+        title.add_css_class("title-4")
+        desc = Gtk.Label(label=description)
+        desc.set_xalign(0)
+        desc.set_wrap(True)
+        desc.add_css_class("dim-label")
+        text.append(title)
+        text.append(desc)
+        card.append(text)
+
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        row.set_margin_start(14)
+        row.set_margin_end(14)
+        row.set_margin_bottom(14)
+        row.set_margin_top(4)
+        apply = Gtk.Button(label="Uygula")
+        apply.add_css_class("suggested-action")
+        apply.connect("clicked", self.apply, path, name)
+        row.append(apply)
+        if str(path) == self.current:
+            badge = Gtk.Label(label="Şu an kullanımda")
+            badge.add_css_class("dim-label")
+            row.append(badge)
+        card.append(row)
+        return card
+
+    def apply(self, _button: Gtk.Button, path: Path, name: str) -> None:
+        uri = f"file://{path}"
+        for key in ("picture-uri", "picture-uri-dark"):
+            code, out = gsettings(["set", "org.gnome.desktop.background", key, uri])
+            if code != 0:
+                self.status.set_text(f"Uygulanamadı: {out.strip()}")
+                return
+        for key in ("picture-uri", "picture-uri-dark"):
+            gsettings(["set", "org.gnome.desktop.screensaver", key, uri])
+        gsettings(["set", "org.gnome.desktop.background", "picture-options", "zoom"])
+        gsettings(["set", "org.gnome.desktop.screensaver", "picture-options", "zoom"])
+        self.current = current_wallpaper()
+        self.status.set_text(f"{name} duvar kağıdı uygulandı.")
+        self.reload_cards()
+
+
+class WallpaperApp(Gtk.Application):
+    def __init__(self) -> None:
+        super().__init__(application_id="org.balikos.Wallpapers",
+                         flags=Gio.ApplicationFlags.DEFAULT_FLAGS)
+
+    def do_activate(self) -> None:
+        window = self.get_active_window()
+        if window is None:
+            window = WallpaperWindow(self)
+        window.present()
+
+
+def main() -> int:
+    return WallpaperApp().run(sys.argv)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,6 +1,29 @@
+# BalıkOS desktop defaults.  Installed systems use the same values.
+[org/gnome/desktop/interface]
+accent-color='blue'
+icon-theme='Adwaita'
+cursor-theme='Adwaita'
+font-name='Noto Sans 11'
+document-font-name='Noto Sans 11'
+monospace-font-name='Noto Sans Mono 10'
+enable-hot-corners=false
+
 [org/gnome/desktop/background]
-picture-uri='file:///usr/share/backgrounds/balikos/wallpaper.png'
-picture-uri-dark='file:///usr/share/backgrounds/balikos/wallpaper.png'
+picture-uri='file:///usr/share/backgrounds/balikos/balikos-suru.png'
+picture-uri-dark='file:///usr/share/backgrounds/balikos/balikos-suru.png'
 picture-options='zoom'
-primary-color='#071a2b'
-secondary-color='#02060c'
+primary-color='#050b14'
+secondary-color='#0a1a2f'
+
+[org/gnome/desktop/screensaver]
+picture-uri='file:///usr/share/backgrounds/balikos/balikos-suru.png'
+picture-uri-dark='file:///usr/share/backgrounds/balikos/balikos-suru.png'
+picture-options='zoom'
+primary-color='#050b14'
+secondary-color='#0a1a2f'
+
+[org/gnome/desktop/wm/preferences]
+button-layout=':minimize,maximize,close'
+
+[org/gnome/shell]
+favorite-apps=['balikos-hello.desktop', 'balikos-store.desktop', 'balikos-wallpapers.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Terminal.desktop', 'org.gnome.Settings.desktop']

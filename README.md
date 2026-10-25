@@ -9,6 +9,14 @@ The previous ISO was a build artifact (a squashfs/Calamares remaster); this
 tree is a clean source reconstruction.  Existing installed systems are
 upgraded in place; they are not reinstalled.
 
+## Remastered 1.0 ISO
+
+The tested `balikos-1.0-x86_64.iso` was produced by remastering the
+prior live image (this host has no pacman/makepkg/mkarchiso).  It carries
+the Calamares installer fixes, the BalıkOS wallpaper set, blue accents,
+GDM/desktop defaults, the Hello/Store/Wallpapers apps and BIOS+UEFI boot.
+The source tree below is the clean-room build path for the next release.
+
 ## Layout
 
 ```text
@@ -27,6 +35,7 @@ packages/
   balikos-branding-kde/       SDDM/KDE Plasma branding
   balikos-settings/           defaults and /etc/skel
   balikos-hello/              GTK welcome app
+  balikos-wallpapers/         wallpaper picker app
   balikos-store/              GTK package browser + Bazaar integration
   balikos-updater/            release/package updater, timer, post-update hook
 scripts/

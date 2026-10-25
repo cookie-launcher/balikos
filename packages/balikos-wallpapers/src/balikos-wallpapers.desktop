@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=BalıkOS Duvar Kağıtları
+Comment=BalıkOS duvar kağıtlarını önizle ve uygula
+Exec=balikos-wallpapers
+Icon=balikos-logo
+Terminal=false
+Categories=Settings;DesktopSettings;
+Keywords=duvar kağıdı;wallpaper;balikos;masaüstü;
+StartupNotify=true

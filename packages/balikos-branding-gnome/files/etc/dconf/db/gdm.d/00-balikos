@@ -1,0 +1,18 @@
+[org/gnome/login-screen]
+logo='/usr/share/pixmaps/balikos-gdm.png'
+banner-message-enable=false
+
+[org/gnome/desktop/interface]
+accent-color='blue'
+color-scheme='prefer-dark'
+gtk-theme='Adwaita-dark'
+
+[org/gnome/desktop/background]
+picture-uri='file:///usr/share/backgrounds/balikos/balikos-suru.png'
+picture-uri-dark='file:///usr/share/backgrounds/balikos/balikos-suru.png'
+picture-options='zoom'
+primary-color='#050b14'
+secondary-color='#0a1a2f'
+
+[org/gnome/desktop/session]
+idle-delay=uint32 0

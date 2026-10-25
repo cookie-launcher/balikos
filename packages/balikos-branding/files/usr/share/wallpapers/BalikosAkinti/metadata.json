@@ -1,0 +1,15 @@
+{
+  "KPlugin": {
+    "Id": "BalikosAkinti",
+    "Name": "BalıkOS Akıntı",
+    "Description": "Yumuşak mavi akışlar ve katmanlı bir ufuk.",
+    "License": "MIT",
+    "Authors": [
+      {
+        "Name": "BalıkOS"
+      }
+    ],
+    "Version": "1.0"
+  },
+  "X-KDE-PluginInfo-Name": "BalikosAkinti"
+}

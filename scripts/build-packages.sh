@@ -66,6 +66,7 @@ build_one "${REPO_ROOT}/packages/balikos-store"
 build_one "${REPO_ROOT}/packages/balikos-updater"
 build_one "${REPO_ROOT}/packages/balikos-branding-gnome"
 build_one "${REPO_ROOT}/packages/balikos-branding-kde"
+build_one "${REPO_ROOT}/packages/balikos-wallpapers"
 
 if [[ $SKIP_KERNEL -eq 0 ]]; then
     build_one "${REPO_ROOT}/packages/balikos-kernel" syncdeps

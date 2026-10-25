@@ -1,0 +1,17 @@
+# Maintainer: BalıkOS contributors
+pkgname=balikos-wallpapers
+pkgver=1.0
+pkgrel=1
+pkgdesc="BalıkOS wallpaper collection and GTK wallpaper picker"
+arch=('any')
+url="https://balikos.org"
+license=('MIT')
+depends=('python' 'python-gobject' 'gtk4' 'gsettings-desktop-schemas' 'balikos-branding')
+source=('balikos-wallpapers' 'balikos-wallpapers.desktop' 'LICENSE')
+sha256sums=('SKIP' 'SKIP' 'SKIP')
+
+package() {
+  install -Dm755 "$srcdir/balikos-wallpapers" "$pkgdir/usr/bin/balikos-wallpapers"
+  install -Dm644 "$srcdir/balikos-wallpapers.desktop" "$pkgdir/usr/share/applications/balikos-wallpapers.desktop"
+  install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

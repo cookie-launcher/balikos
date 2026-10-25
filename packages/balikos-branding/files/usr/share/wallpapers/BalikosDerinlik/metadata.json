@@ -1,0 +1,15 @@
+{
+  "KPlugin": {
+    "Id": "BalikosDerinlik",
+    "Name": "BalıkOS Derinlik",
+    "Description": "Sakin, koyu ve odaklanmaya yer bırakan bir derinlik.",
+    "License": "MIT",
+    "Authors": [
+      {
+        "Name": "BalıkOS"
+      }
+    ],
+    "Version": "1.0"
+  },
+  "X-KDE-PluginInfo-Name": "BalikosDerinlik"
+}
