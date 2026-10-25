@@ -98,7 +98,7 @@ scripts read it; `iso/airootfs/etc/balikos-release` is synchronized by
 
 - `balikos-updater` runs daily via `balikos-updater.timer` (randomized delay)
   and on demand.
-- Release feed: SourceForge `release.json` (JSON) with `version`,
+- Release feed: GitHub Releases `release.json` (JSON) with `version`,
   `release_name`, `release_notes_url`, `iso_url`, `sha256`.
 - A newer milestone produces a desktop notification with **Update** and
   **Snooze** actions.  Package-only updates use the normal notifier.

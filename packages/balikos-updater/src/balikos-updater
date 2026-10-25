@@ -88,8 +88,8 @@ def load_config() -> configparser.ConfigParser:
         {
             "updater": {
                 "enabled": "true",
-                "feed_url": "https://sourceforge.net/projects/balikos/files/releases/release.json/download",
-                "release_notes_url": "https://balikos.org/releases/",
+                "feed_url": "https://github.com/cookie-launcher/balikos/releases/latest/download/release.json",
+                "release_notes_url": "https://github.com/cookie-launcher/balikos/releases",
                 "snooze_days": "3",
             }
         }
