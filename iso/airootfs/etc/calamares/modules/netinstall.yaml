@@ -38,6 +38,7 @@
      - balikos-settings
      - balikos-branding
      - balikos-updater
+     - balikos-wallpapers
 - name: "BalıkOS shell configuration"
   description: "Shell packages for BalıkOS"
   hidden: false
