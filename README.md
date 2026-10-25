@@ -1,7 +1,16 @@
 # BalıkOS source tree
 
 BalıkOS is a CachyOS/Arch-based rolling-release live and installable
-distribution.  This repository is the source of truth for the ISO profile,
+distribution.
+
+## Current remaster artifact
+
+`/home/emre/balikos-build/out/balikos-1.0-x86_64.iso`
+
+SHA256 `539b491af5b08e3e5931686939d883c53c3907e12b0b6f26762445831490b3b6`.
+This ISO was tested in QEMU/libvirt on BIOS and UEFI and installed to
+a 30 GB btrfs disk.  The profiles `BalikOS-1.0-BIOS` and
+`BalikOS-1.0-UEFI` are defined in `qemu:///system`.  This repository is the source of truth for the ISO profile,
 Calamares configuration, BalıkOS packages, branding and the release/update
 pipeline.
 
