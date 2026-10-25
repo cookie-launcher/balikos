@@ -600,6 +600,7 @@ _package() {
                 'scx-scheds: to use sched-ext schedulers')
     provides=(VIRTUALBOX-GUEST-MODULES WIREGUARD-MODULE KSMBD-MODULE V4L2LOOPBACK-MODULE NTSYNC-MODULE VHBA-MODULE ADIOS-MODULE linux-cachyos linux)
     conflicts=('linux-cachyos' 'linux')
+    replaces=('linux-cachyos')
     # Replace LTO kernel with the default kernel
     if _is_lto_kernel; then
         provides+=(linux-cachyos-lto=$_kernver)
@@ -641,6 +642,7 @@ _package-headers() {
      "${pkgbase}")
     provides=(LINUX-HEADERS linux-cachyos-headers linux-headers)
     conflicts=('linux-cachyos-headers' 'linux-headers')
+    replaces=('linux-cachyos-headers')
 
     if _is_lto_kernel; then
         provides+=(linux-cachyos-lto-headers=$_kernver)

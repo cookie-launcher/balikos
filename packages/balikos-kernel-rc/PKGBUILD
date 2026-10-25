@@ -606,6 +606,7 @@ _package() {
     provides=(VIRTUALBOX-GUEST-MODULES WIREGUARD-MODULE KSMBD-MODULE V4L2LOOPBACK-MODULE NTSYNC-MODULE VHBA-MODULE ADIOS-MODULE)
     provides+=('linux-cachyos-rc' 'linux')
     conflicts=('linux-cachyos-rc' 'linux')
+    replaces=('linux-cachyos-rc')
 
     cd "$_srcname"
 
@@ -643,6 +644,7 @@ _package-headers() {
     provides=(LINUX-HEADERS)
     provides+=('linux-cachyos-rc-headers' 'linux-headers')
     conflicts=('linux-cachyos-rc-headers' 'linux-headers')
+    replaces=('linux-cachyos-rc-headers')
 
     if _is_lto_kernel; then
         depends+=(clang llvm lld)

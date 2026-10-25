@@ -541,6 +541,7 @@ _package() {
     provides=(VIRTUALBOX-GUEST-MODULES WIREGUARD-MODULE KSMBD-MODULE V4L2LOOPBACK-MODULE NTSYNC-MODULE VHBA-MODULE ADIOS-MODULE)
     provides+=('linux-cachyos-lts' 'linux')
     conflicts=('linux-cachyos-lts' 'linux')
+    replaces=('linux-cachyos-lts')
 
     cd "$_srcname"
 
@@ -578,6 +579,7 @@ _package-headers() {
     provides=(LINUX-HEADERS)
     provides+=('linux-cachyos-lts-headers' 'linux-headers')
     conflicts=('linux-cachyos-lts-headers' 'linux-headers')
+    replaces=('linux-cachyos-lts-headers')
 
     cd "${_srcname}"
     local builddir="$pkgdir/usr/lib/modules/$(<version)/build"
