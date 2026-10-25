@@ -1,3 +1,19 @@
-post_install() { dconf update >/dev/null 2>&1 || true; }
-post_upgrade() { dconf update >/dev/null 2>&1 || true; }
-post_remove() { dconf update >/dev/null 2>&1 || true; }
+post_install() {
+    install -d /etc/dconf/profile
+    for profile in user gdm; do
+        touch "/etc/dconf/profile/${profile}"
+    done
+    grep -q '^system-db:local' /etc/dconf/profile/user 2>/dev/null || \
+        echo 'system-db:local' >> /etc/dconf/profile/user
+    grep -q '^system-db:gdm' /etc/dconf/profile/gdm 2>/dev/null || \
+        echo 'system-db:gdm' >> /etc/dconf/profile/gdm
+    dconf update >/dev/null 2>&1 || true
+}
+
+post_upgrade() {
+    post_install
+}
+
+post_remove() {
+    dconf update >/dev/null 2>&1 || true
+}
