@@ -10,7 +10,7 @@ provides=('cachyos-hello')
 conflicts=('cachyos-hello')
 replaces=('cachyos-hello')
 depends=('python' 'python-gobject' 'gtk4' 'hicolor-icon-theme' 'balikos-branding')
-source=('src/balikos-hello' 'src/balikos-hello.desktop' 'LICENSE')
+source=('balikos-hello' 'balikos-hello.desktop' 'LICENSE')
 sha256sums=('SKIP' 'SKIP' 'SKIP')
 
 package() {
