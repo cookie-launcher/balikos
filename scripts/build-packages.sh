@@ -46,6 +46,7 @@ add_repo() {
 build_one() {
     local dir="$1"
     local deps="${2:-nodeps}"
+    local -a extra=("${@:3}")
     log "building $(basename "$dir")"
     local -a args=(--noconfirm)
     [[ $CLEAN -eq 1 ]] && args+=(--cleanbuild)
@@ -54,6 +55,7 @@ build_one() {
     else
         args+=(--nodeps)
     fi
+    args+=("${extra[@]}")
     (cd "$dir" && makepkg "${args[@]}")
     add_repo
 }
@@ -69,7 +71,7 @@ build_one "${REPO_ROOT}/packages/balikos-branding-kde"
 build_one "${REPO_ROOT}/packages/balikos-wallpapers"
 
 if [[ $SKIP_KERNEL -eq 0 ]]; then
-    build_one "${REPO_ROOT}/packages/balikos-kernel" syncdeps
+    build_one "${REPO_ROOT}/packages/balikos-kernel" syncdeps --skippgpcheck
 fi
 
 if [[ $WITH_VARIANTS -eq 1 ]]; then
