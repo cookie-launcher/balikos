@@ -109,20 +109,34 @@ scripts read it; `iso/airootfs/etc/balikos-release` is synchronized by
   logged and ignored.  The updater is disabled with `balikos-updater
   --disable` or `enabled = false` in `/etc/balikos/updater.conf`.
 
-Publishing `1.1`:
+Publishing `1.1` from GitHub Actions:
 
 ```bash
 ./scripts/bump-version.sh 1.1
-./scripts/build-packages.sh
-sudo ./scripts/build-iso.sh
-./scripts/test-iso-qemu.sh --bios
-./scripts/test-iso-qemu.sh --uefi
-SF_USER=youruser SF_PROJECT=balikos ./scripts/publish-release.sh
+git add config/balikos-release
+git commit -m "BalıkOS 1.1"
+git tag v1.1
+git push origin main v1.1
 ```
 
-`publish-release.sh` creates tag `v1.1`, writes `out/release.json`, and uploads
-the ISO, checksum and feed to
-`frs.sourceforge.net:/home/frs/project/<project>/releases/`.
+The `build` workflow runs on the tag, builds packages and the ISO, splits
+the ISO into <2 GiB parts (GitHub release asset limit), verifies the SHA256,
+and attaches the parts, checksums, `release.json` and the local package
+repository to the GitHub Release.  The updater feed is
+`https://github.com/cookie-launcher/balikos/releases/latest/download/release.json`.
+
+To verify a downloaded release:
+
+```bash
+for f in balikos-*.iso.sha256; do
+  base="${f%.sha256}"
+  cat "${base}.part-"* > "$base"
+  sha256sum -c "$f"
+done
+```
+
+`scripts/publish-release.sh` is still available for a manual SourceForge
+mirror upload; GitHub Releases is the primary path.
 
 ## Build prerequisites (Arch Linux)
 
