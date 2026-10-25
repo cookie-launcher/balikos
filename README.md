@@ -6,6 +6,7 @@ distribution.
 ## Current remaster artifact
 
 `/home/emre/balikos-build/out/balikos-1.0-x86_64.iso`
+Download: https://gofile.io/d/7BeBRq9f
 
 SHA256 `539b491af5b08e3e5931686939d883c53c3907e12b0b6f26762445831490b3b6`.
 This ISO was tested in QEMU/libvirt on BIOS and UEFI and installed to
