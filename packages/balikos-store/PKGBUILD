@@ -11,7 +11,7 @@ conflicts=('cachyos-packageinstaller')
 replaces=('cachyos-packageinstaller')
 depends=('python' 'python-gobject' 'gtk4' 'pacman' 'polkit' 'flatpak' 'hicolor-icon-theme' 'balikos-branding')
 optdepends=('bazaar: native Bazaar package' 'flatpak: run Bazaar from Flathub')
-source=('balikos-store' 'balikos-store.desktop' 'balikos-bazaar' 'balikos-bazaar.desktop' 'LICENSE')
+source=('src/balikos-store' 'src/balikos-store.desktop' 'src/balikos-bazaar' 'src/balikos-bazaar.desktop' 'LICENSE')
 sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
 
 package() {

@@ -7,7 +7,7 @@ arch=('any')
 url="https://balikos.org"
 license=('MIT')
 depends=('python' 'python-gobject' 'gtk4' 'gsettings-desktop-schemas' 'balikos-branding')
-source=('balikos-wallpapers' 'balikos-wallpapers.desktop' 'LICENSE')
+source=('src/balikos-wallpapers' 'src/balikos-wallpapers.desktop' 'LICENSE')
 sha256sums=('SKIP' 'SKIP' 'SKIP')
 
 package() {

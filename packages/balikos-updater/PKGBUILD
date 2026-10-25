@@ -10,11 +10,11 @@ depends=('python' 'pacman' 'libnotify' 'pacman-contrib')
 optdepends=('sudo: unprivileged manual updates' 'polkit: pkexec elevation')
 backup=('etc/balikos/updater.conf')
 source=(
-  'balikos-updater'
-  'balikos-updater.service'
-  'balikos-updater.timer'
-  '50-balikos-release'
-  'updater.conf'
+  'src/balikos-updater'
+  'systemd/balikos-updater.service'
+  'systemd/balikos-updater.timer'
+  'hooks/50-balikos-release'
+  'config/updater.conf'
   'LICENSE'
 )
 sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
