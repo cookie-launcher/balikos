@@ -1,0 +1,6 @@
+[org/gnome/desktop/background]
+picture-uri='file:///usr/share/backgrounds/balikos/wallpaper.png'
+picture-uri-dark='file:///usr/share/backgrounds/balikos/wallpaper.png'
+picture-options='zoom'
+primary-color='#071a2b'
+secondary-color='#02060c'

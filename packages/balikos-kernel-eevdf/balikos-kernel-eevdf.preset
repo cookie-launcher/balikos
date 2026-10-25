@@ -1,0 +1,4 @@
+# mkinitcpio preset for balikos-kernel-eevdf
+ALL_kver="/boot/vmlinuz-balikos-kernel-eevdf"
+PRESETS=('default')
+default_image="/boot/initramfs-balikos-kernel-eevdf.img"

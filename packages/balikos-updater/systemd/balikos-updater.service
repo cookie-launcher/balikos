@@ -1,0 +1,11 @@
+[Unit]
+Description=BalıkOS update check
+Documentation=man:balikos-updater(8)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/balikos-updater --check
+Nice=10
+IOSchedulingClass=idle

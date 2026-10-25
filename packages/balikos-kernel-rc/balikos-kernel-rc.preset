@@ -1,0 +1,4 @@
+# mkinitcpio preset for balikos-kernel-rc
+ALL_kver="/boot/vmlinuz-balikos-kernel-rc"
+PRESETS=('default')
+default_image="/boot/initramfs-balikos-kernel-rc.img"

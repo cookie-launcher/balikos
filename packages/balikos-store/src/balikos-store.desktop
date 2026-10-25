@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=BalıkOS Mağaza
+Comment=Paket ara, kur ve Bazaar uygulama mağazasını aç
+Exec=balikos-store
+Icon=balikos-logo
+Terminal=false
+Categories=System;PackageManager;
+Keywords=mağaza;store;paket;bazaar;
+StartupNotify=true

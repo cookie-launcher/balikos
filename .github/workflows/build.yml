@@ -1,0 +1,76 @@
+name: build
+
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  iso:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --privileged
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build dependencies
+        run: |
+          pacman -Syu --noconfirm base-devel archiso git qemu-system-x86 \
+            edk2-ovmf python rsync openssh squashfs-tools dosfstools mtools \
+            syslinux grub
+      - name: Create unprivileged builder
+        run: |
+          useradd -m builder
+          echo 'builder ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/builder
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+      - name: Build packages
+        run: sudo -u builder ./scripts/build-packages.sh
+      - name: Build ISO
+        run: ./scripts/build-iso.sh
+      - name: BIOS boot smoke test
+        run: ./scripts/test-iso-qemu.sh --bios
+      - name: UEFI boot smoke test
+        run: ./scripts/test-iso-qemu.sh --uefi
+      - name: Upload ISO artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: balikos-iso
+          path: |
+            out/*.iso
+            out/*.sha256
+            out/release.json
+            repo/x86_64/*
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: iso
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: balikos-iso
+          path: out
+      - uses: actions/download-artifact@v4
+        with:
+          name: balikos-iso
+          path: repo
+      - name: Configure SourceForge SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.SF_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan frs.sourceforge.net >> ~/.ssh/known_hosts
+      - name: Publish release feed and ISO
+        env:
+          SF_USER: ${{ secrets.SF_USER }}
+          SF_PROJECT: ${{ secrets.SF_PROJECT }}
+          SF_DIR: releases
+        run: |
+          ISO="$(find out -maxdepth 1 -name '*.iso' | head -1)"
+          test -n "$ISO"
+          ./scripts/publish-release.sh --iso "$ISO" --no-git

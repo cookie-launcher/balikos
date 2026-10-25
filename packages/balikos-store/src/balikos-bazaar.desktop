@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Bazaar
+Comment=BalıkOS uygulama mağazası (Bazaar)
+Exec=balikos-bazaar
+Icon=system-software-install
+Terminal=false
+Categories=System;PackageManager;
+Keywords=bazaar;flatpak;mağaza;
+StartupNotify=true

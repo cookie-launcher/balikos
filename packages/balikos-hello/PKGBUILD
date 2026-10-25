@@ -1,0 +1,20 @@
+# Maintainer: BalıkOS contributors
+pkgname=balikos-hello
+pkgver=1.0
+pkgrel=1
+pkgdesc="BalıkOS welcome application"
+arch=('any')
+url="https://balikos.org"
+license=('MIT')
+provides=('cachyos-hello')
+conflicts=('cachyos-hello')
+replaces=('cachyos-hello')
+depends=('python' 'python-gobject' 'gtk4' 'hicolor-icon-theme' 'balikos-branding')
+source=('balikos-hello' 'balikos-hello.desktop' 'LICENSE')
+sha256sums=('SKIP' 'SKIP' 'SKIP')
+
+package() {
+  install -Dm755 "$srcdir/balikos-hello" "$pkgdir/usr/bin/balikos-hello"
+  install -Dm644 "$srcdir/balikos-hello.desktop" "$pkgdir/usr/share/applications/balikos-hello.desktop"
+  install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

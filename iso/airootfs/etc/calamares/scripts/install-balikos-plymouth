@@ -1,0 +1,9 @@
+#!/bin/sh
+# Copy BalıkOS Plymouth theme and logos into the target system.
+set -e
+TARGET="${1:-${ROOT}}"
+[ -n "${TARGET}" ] || exit 1
+install -d "${TARGET}/usr/share/plymouth/themes/cachyos-bootanimation"
+cp -a /usr/share/plymouth/themes/cachyos-bootanimation/. "${TARGET}/usr/share/plymouth/themes/cachyos-bootanimation/"
+install -Dm644 /usr/share/pixmaps/balikos-logo.png "${TARGET}/usr/share/pixmaps/balikos-logo.png"
+install -Dm644 /usr/share/pixmaps/archlinux-logo.png "${TARGET}/usr/share/pixmaps/archlinux-logo.png" || true

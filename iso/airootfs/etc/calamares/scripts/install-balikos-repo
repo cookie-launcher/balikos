@@ -1,0 +1,9 @@
+#!/bin/sh
+# Copy the live ISO's local [balikos] package repository into the target.
+set -eu
+TARGET="${1:-${ROOT}}"
+[ -n "${TARGET}" ] || exit 1
+if [ -d /var/cache/balikos/repo/x86_64 ]; then
+    install -d "${TARGET}/var/cache/balikos/repo/x86_64"
+    cp -a /var/cache/balikos/repo/x86_64/. "${TARGET}/var/cache/balikos/repo/x86_64/"
+fi

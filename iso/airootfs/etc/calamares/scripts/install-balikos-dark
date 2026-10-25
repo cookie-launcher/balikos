@@ -1,0 +1,39 @@
+#!/bin/sh
+# Apply an optional GNOME/GTK dark theme in the target system.
+set -e
+TARGET="${1:-${ROOT}}"
+USER_NAME="${2:-${USER}}"
+[ -n "${TARGET}" ] || exit 1
+[ -n "${USER_NAME}" ] || exit 1
+
+# The dark desktop group is the only one that installs gnome-themes-extra.
+[ -d "${TARGET}/usr/share/themes/Adwaita-dark" ] || exit 0
+
+install -d "${TARGET}/etc/dconf/db/local.d"
+cat > "${TARGET}/etc/dconf/db/local.d/00-balikos-dark" <<'EOF'
+[org/gnome/desktop/interface]
+color-scheme='prefer-dark'
+gtk-theme='Adwaita-dark'
+EOF
+
+HOME_DIR="${TARGET}/home/${USER_NAME}"
+install -d "${HOME_DIR}/.config/gtk-3.0" "${HOME_DIR}/.config/gtk-4.0"
+cat > "${HOME_DIR}/.config/gtk-3.0/settings.ini" <<'EOF'
+[Settings]
+gtk-application-prefer-dark-theme=1
+gtk-theme-name=Adwaita-dark
+EOF
+cat > "${HOME_DIR}/.config/gtk-4.0/settings.ini" <<'EOF'
+[Settings]
+gtk-application-prefer-dark-theme=1
+EOF
+
+UID_NUM="$(awk -F: -v u="${USER_NAME}" '$1 == u { print $3 }' "${TARGET}/etc/passwd" | head -1)"
+GID_NUM="$(awk -F: -v u="${USER_NAME}" '$1 == u { print $4 }' "${TARGET}/etc/passwd" | head -1)"
+if [ -n "${UID_NUM}" ] && [ -n "${GID_NUM}" ]; then
+    chown -R "${UID_NUM}:${GID_NUM}" "${HOME_DIR}/.config"
+fi
+
+if [ -x "${TARGET}/usr/bin/dconf" ]; then
+    chroot "${TARGET}" /usr/bin/dconf update >/dev/null 2>&1 || true
+fi

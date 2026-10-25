@@ -1,0 +1,14 @@
+NAME="BalıkOS"
+PRETTY_NAME="BalıkOS"
+ID=balikos
+ID_LIKE=arch
+BUILD_ID=rolling
+ANSI_COLOR="38;2;56;189;248"
+HOME_URL="https://balikos.org/"
+DOCUMENTATION_URL="https://balikos.org/docs/"
+SUPPORT_URL="https://balikos.org/support/"
+BUG_REPORT_URL="https://balikos.org/issues/"
+PRIVACY_POLICY_URL="https://balikos.org/privacy/"
+LOGO=balikos-logo
+IMAGE_ID=balikos
+IMAGE_VERSION=2026.10.24

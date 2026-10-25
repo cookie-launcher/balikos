@@ -1,0 +1,23 @@
+# Maintainer: BalıkOS contributors
+pkgname=balikos-store
+pkgver=1.0
+pkgrel=1
+pkgdesc="BalıkOS package browser with Bazaar integration"
+arch=('any')
+url="https://balikos.org"
+license=('MIT')
+provides=('cachyos-packageinstaller')
+conflicts=('cachyos-packageinstaller')
+replaces=('cachyos-packageinstaller')
+depends=('python' 'python-gobject' 'gtk4' 'pacman' 'polkit' 'flatpak' 'hicolor-icon-theme' 'balikos-branding')
+optdepends=('bazaar: native Bazaar package' 'flatpak: run Bazaar from Flathub')
+source=('balikos-store' 'balikos-store.desktop' 'balikos-bazaar' 'balikos-bazaar.desktop' 'LICENSE')
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+
+package() {
+  install -Dm755 "$srcdir/balikos-store" "$pkgdir/usr/bin/balikos-store"
+  install -Dm755 "$srcdir/balikos-bazaar" "$pkgdir/usr/bin/balikos-bazaar"
+  install -Dm644 "$srcdir/balikos-store.desktop" "$pkgdir/usr/share/applications/balikos-store.desktop"
+  install -Dm644 "$srcdir/balikos-bazaar.desktop" "$pkgdir/usr/share/applications/balikos-bazaar.desktop"
+  install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

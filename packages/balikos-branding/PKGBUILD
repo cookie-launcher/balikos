@@ -1,0 +1,20 @@
+# Maintainer: BalıkOS contributors
+pkgname=balikos-branding
+pkgver=1.0
+pkgrel=1
+pkgdesc="Shared BalıkOS visual identity: Plymouth, GRUB, wallpapers, icons, sounds"
+arch=('any')
+url="https://balikos.org"
+license=('MIT')
+provides=('cachyos-wallpapers')
+conflicts=('cachyos-wallpapers')
+replaces=('cachyos-wallpapers')
+depends=('hicolor-icon-theme')
+optdepends=('plymouth: boot splash' 'grub: GRUB theme' 'sddm: KDE login theme' 'gdm: GNOME login theme')
+source=('LICENSE')
+sha256sums=('SKIP')
+
+package() {
+  cp -a "$startdir/files/." "$pkgdir/"
+  install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

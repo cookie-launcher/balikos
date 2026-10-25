@@ -1,0 +1,17 @@
+# Maintainer: BalıkOS contributors
+pkgname=balikos-branding-gnome
+pkgver=1.0
+pkgrel=1
+pkgdesc="BalıkOS GDM and GNOME branding"
+arch=('any')
+url="https://balikos.org"
+license=('MIT')
+depends=('balikos-branding' 'gdm' 'dconf')
+install="$pkgname.install"
+source=('LICENSE')
+sha256sums=('SKIP')
+
+package() {
+  cp -a "$startdir/files/." "$pkgdir/"
+  install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

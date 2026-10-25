@@ -1,0 +1,4 @@
+# mkinitcpio preset for balikos-kernel-hardened
+ALL_kver="/boot/vmlinuz-balikos-kernel-hardened"
+PRESETS=('default')
+default_image="/boot/initramfs-balikos-kernel-hardened.img"

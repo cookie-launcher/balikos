@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=BalıkOS'a Hoş Geldiniz
+Comment=BalıkOS karşılama, güncelleme ve mağaza merkezi
+Exec=balikos-hello
+Icon=balikos-logo
+Terminal=false
+Categories=System;Settings;
+Keywords=balikos;welcome;hello;güncelleme;
+StartupNotify=true

@@ -1,0 +1,180 @@
+#!/usr/bin/env python3
+"""BalıkOS Store: a small GTK package browser plus Bazaar integration."""
+
+from __future__ import annotations
+
+import re
+import subprocess
+import sys
+import threading
+
+import gi
+
+gi.require_version("Gtk", "4.0")
+from gi.repository import GLib, Gtk  # noqa: E402
+
+PACKAGE_RE = re.compile(r"^[a-z0-9@._+-]+/[a-z0-9@._+-]+ [^ ]+")
+DESKTOP_APPS = {
+    "bazaar": ["bazaar"],
+    "flatpak": ["flatpak", "run", "io.github.kolunmi.Bazaar"],
+}
+
+
+def run_command(argv: list[str]) -> tuple[int, str]:
+    try:
+        proc = subprocess.run(argv, text=True, capture_output=True, timeout=120)
+        return proc.returncode, (proc.stdout or "") + (proc.stderr or "")
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return 1, str(exc)
+
+
+def search_packages(query: str) -> list[tuple[str, str]]:
+    if not query.strip():
+        return []
+    code, output = run_command(["pacman", "-Ss", query])
+    if code != 0:
+        return []
+    lines = output.splitlines()
+    results: list[tuple[str, str]] = []
+    i = 0
+    while i < len(lines):
+        header = lines[i]
+        i += 1
+        if not PACKAGE_RE.match(header):
+            continue
+        name = header.split()[0].split("/", 1)[-1]
+        description = lines[i].strip() if i < len(lines) and not PACKAGE_RE.match(lines[i]) else ""
+        results.append((name, description))
+        if i < len(lines) and not PACKAGE_RE.match(lines[i]):
+            i += 1
+    return results[:80]
+
+
+class StoreWindow(Gtk.ApplicationWindow):
+    def __init__(self, app: Gtk.Application) -> None:
+        super().__init__(application=app, title="BalıkOS Mağaza")
+        self.set_default_size(820, 620)
+
+        header = Gtk.HeaderBar()
+        header.set_title_widget(Gtk.Label(label="BalıkOS Mağaza"))
+        self.set_titlebar(header)
+
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        outer.set_margin_top(18)
+        outer.set_margin_bottom(18)
+        outer.set_margin_start(18)
+        outer.set_margin_end(18)
+        self.set_child(outer)
+
+        top = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        outer.append(top)
+        self.search = Gtk.SearchEntry()
+        self.search.set_placeholder_text("Paket ara…")
+        self.search.set_hexpand(True)
+        self.search.connect("activate", self.on_search)
+        top.append(self.search)
+        search_button = Gtk.Button(label="Ara")
+        search_button.connect("clicked", self.on_search)
+        top.append(search_button)
+        bazaar = Gtk.Button(label="Bazaar")
+        bazaar.connect("clicked", self.open_bazaar)
+        top.append(bazaar)
+
+        self.status = Gtk.Label(label="Bir paket arayın veya Bazaar'a geçin.")
+        self.status.set_xalign(0)
+        outer.append(self.status)
+
+        scroller = Gtk.ScrolledWindow()
+        scroller.set_vexpand(True)
+        outer.append(scroller)
+        self.listbox = Gtk.ListBox()
+        self.listbox.set_selection_mode(Gtk.SelectionMode.NONE)
+        scroller.set_child(self.listbox)
+
+    def on_search(self, *_args: object) -> None:
+        query = self.search.get_text()
+        self.status.set_text("Aranıyor…")
+        self.clear()
+        threading.Thread(target=self._search_worker, args=(query,), daemon=True).start()
+
+    def _search_worker(self, query: str) -> None:
+        results = search_packages(query)
+        GLib.idle_add(self._show_results, results)
+
+    def clear(self) -> None:
+        child = self.listbox.get_first_child()
+        while child is not None:
+            nxt = child.get_next_sibling()
+            self.listbox.remove(child)
+            child = nxt
+
+    def _show_results(self, results: list[tuple[str, str]]) -> bool:
+        self.clear()
+        if not results:
+            self.status.set_text("Sonuç bulunamadı.")
+            return False
+        self.status.set_text(f"{len(results)} sonuç")
+        for name, description in results:
+            row = Gtk.ListBoxRow()
+            box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+            box.set_margin_top(8)
+            box.set_margin_bottom(8)
+            box.set_margin_start(8)
+            box.set_margin_end(8)
+            text = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+            title = Gtk.Label(label=name)
+            title.set_xalign(0)
+            title.add_css_class("heading")
+            desc = Gtk.Label(label=description)
+            desc.set_xalign(0)
+            desc.set_wrap(True)
+            desc.add_css_class("dim-label")
+            text.append(title)
+            text.append(desc)
+            text.set_hexpand(True)
+            box.append(text)
+            install = Gtk.Button(label="Kur")
+            install.connect("clicked", self.install_package, name)
+            box.append(install)
+            row.set_child(box)
+            self.listbox.append(row)
+        return False
+
+    def install_package(self, _button: Gtk.Button, name: str) -> None:
+        self.status.set_text(f"{name} kuruluyor…")
+        argv = ["pkexec", "pacman", "-S", "--noconfirm", name]
+        threading.Thread(target=self._install_worker, args=(argv,), daemon=True).start()
+
+    def _install_worker(self, argv: list[str]) -> None:
+        code, output = run_command(argv)
+        message = f"{argv[-1]} kuruldu." if code == 0 else f"Kurulum başarısız: {output.strip()[:300]}"
+        GLib.idle_add(self.status.set_text, message)
+
+    def open_bazaar(self, *_args: object) -> None:
+        for argv in DESKTOP_APPS.values():
+            try:
+                subprocess.Popen(argv, start_new_session=True)
+                self.status.set_text("Bazaar açılıyor…")
+                return
+            except OSError:
+                continue
+        self.status.set_text("Bazaar bulunamadı. `flatpak install flathub io.github.kolunmi.Bazaar` deneyin.")
+
+
+class StoreApp(Gtk.Application):
+    def __init__(self) -> None:
+        super().__init__(application_id="org.balikos.Store", flags=Gtk.ApplicationFlags.DEFAULT_FLAGS)
+
+    def do_activate(self) -> None:
+        window = self.get_active_window()
+        if window is None:
+            window = StoreWindow(self)
+        window.present()
+
+
+def main() -> int:
+    return StoreApp().run(sys.argv)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

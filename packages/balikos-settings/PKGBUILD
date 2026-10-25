@@ -1,0 +1,19 @@
+# Maintainer: BalıkOS contributors
+pkgname=balikos-settings
+pkgver=1.0
+pkgrel=1
+pkgdesc="BalıkOS default configuration and user skeleton"
+arch=('any')
+url="https://balikos.org"
+license=('MIT')
+depends=('balikos-branding')
+provides=('cachyos-settings')
+conflicts=('cachyos-settings')
+replaces=('cachyos-settings')
+source=('LICENSE')
+sha256sums=('SKIP')
+
+package() {
+  cp -a "$startdir/files/." "$pkgdir/"
+  install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

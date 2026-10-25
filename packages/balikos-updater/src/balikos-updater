@@ -1,0 +1,414 @@
+#!/usr/bin/env python3
+"""BalıkOS updater.
+
+Checks the BalıkOS release feed and normal Arch rolling package updates.
+Runs daily from a systemd timer or manually.  Release-milestone notifications
+carry an Update action; package-only updates use the normal notifier.
+"""
+
+from __future__ import annotations
+
+import argparse
+import configparser
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+VERSION_FILE = Path("/etc/balikos-release")
+CONFIG_FILE = Path("/etc/balikos/updater.conf")
+STATE_DIR = Path("/var/lib/balikos/updater")
+LOG_FILE = Path("/var/log/balikos-updater.log")
+HOOK_DIR = Path("/usr/lib/balikos/update-hooks")
+
+
+@dataclass
+class Session:
+    user: str
+    uid: int
+    display: str | None
+    wayland: str | None
+    dbus: str
+
+
+@dataclass
+class Release:
+    version: str
+    name: str
+    notes_url: str | None
+    iso_url: str | None
+    published: str | None
+
+
+def log(message: str) -> None:
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    line = f"{stamp} {message}\n"
+    try:
+        LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with LOG_FILE.open("a", encoding="utf-8") as fh:
+            fh.write(line)
+    except OSError:
+        pass
+    if sys.stderr.isatty():
+        sys.stderr.write(line)
+
+
+def read_release() -> dict[str, str]:
+    values: dict[str, str] = {}
+    if not VERSION_FILE.exists():
+        return values
+    for raw in VERSION_FILE.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        values[key.strip()] = value.strip().strip('"').strip("'")
+    return values
+
+
+def version_key(value: str) -> tuple[int, ...]:
+    parts = re.findall(r"\d+", value)
+    if not parts:
+        raise ValueError(f"invalid version: {value!r}")
+    # A milestone is numeric; pad to a stable length so 1.1 > 1.0.9.
+    return tuple(int(p) for p in parts[:4]) + (0,) * max(0, 4 - len(parts))
+
+
+def load_config() -> configparser.ConfigParser:
+    cfg = configparser.ConfigParser()
+    cfg.read_dict(
+        {
+            "updater": {
+                "enabled": "true",
+                "feed_url": "https://sourceforge.net/projects/balikos/files/releases/release.json/download",
+                "release_notes_url": "https://balikos.org/releases/",
+                "snooze_days": "3",
+            }
+        }
+    )
+    if CONFIG_FILE.exists():
+        cfg.read(CONFIG_FILE)
+    return cfg
+
+
+def save_snooze(days: int) -> None:
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    until = datetime.now(timezone.utc) + timedelta(days=max(1, days))
+    (STATE_DIR / "snooze-until").write_text(until.isoformat() + "\n", encoding="utf-8")
+
+
+def snoozed() -> bool:
+    path = STATE_DIR / "snooze-until"
+    if not path.exists():
+        return False
+    try:
+        until = datetime.fromisoformat(path.read_text(encoding="utf-8").strip())
+    except (ValueError, OSError):
+        return False
+    return datetime.now(timezone.utc) < until
+
+
+def find_session() -> Session | None:
+    """Return the first active graphical session for notifications."""
+    if not shutil.which("loginctl"):
+        return None
+    try:
+        out = subprocess.run(
+            ["loginctl", "list-sessions", "--no-legend"],
+            check=True,
+            text=True,
+            capture_output=True,
+        ).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    for line in out.splitlines():
+        fields = line.split()
+        if len(fields) < 2:
+            continue
+        sid = fields[0]
+        try:
+            props = subprocess.run(
+                ["loginctl", "show-session", sid, "-p", "Name", "-p", "Type", "-p", "Active", "-p", "Display"],
+                check=True,
+                text=True,
+                capture_output=True,
+            ).stdout
+        except (OSError, subprocess.CalledProcessError):
+            continue
+        data = dict(item.split("=", 1) for item in props.splitlines() if "=" in item)
+        if data.get("Active") != "yes" or data.get("Type") not in {"x11", "wayland"}:
+            continue
+        user = data.get("Name", "")
+        try:
+            uid = int(
+                subprocess.run(
+                    ["id", "-u", user], check=True, text=True, capture_output=True
+                ).stdout.strip()
+            )
+        except (OSError, subprocess.CalledProcessError, ValueError):
+            continue
+        dbus = f"unix:path=/run/user/{uid}/bus"
+        if not Path(f"/run/user/{uid}/bus").exists():
+            continue
+        return Session(
+            user=user,
+            uid=uid,
+            display=data.get("Display") or None,
+            wayland=None,
+            dbus=dbus,
+        )
+    return None
+
+
+def notify(title: str, body: str, actions: bool = False) -> str | None:
+    """Show a desktop notification. Returns the selected action, if any."""
+    session = find_session()
+    if not session or not shutil.which("notify-send"):
+        log(f"notification skipped (no session/notify-send): {title}")
+        return None
+    cmd = [
+        "notify-send",
+        "--app-name=BalıkOS",
+        "--icon=balikos-logo",
+        "--urgency=normal",
+        "--expire-time=0" if actions else "--expire-time=12000",
+    ]
+    if actions:
+        cmd += ["--action=update=Güncelle", "--action=snooze=Ertele"]
+    cmd += [title, body]
+    if os.geteuid() == 0:
+        env = [
+            "runuser",
+            "-u",
+            session.user,
+            "--",
+            "env",
+            f"DBUS_SESSION_BUS_ADDRESS={session.dbus}",
+        ]
+        if session.display:
+            env.append(f"DISPLAY={session.display}")
+        cmd = env + cmd
+    try:
+        proc = subprocess.run(cmd, text=True, capture_output=True, timeout=300)
+        return proc.stdout.strip() or None
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        log(f"notification failed: {exc}")
+        return None
+
+
+def fetch_release(url: str) -> Release | None:
+    request = urllib.request.Request(
+        url,
+        headers={"User-Agent": "balikos-updater/1.0", "Accept": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, TimeoutError, ValueError, OSError) as exc:
+        log(f"release feed unavailable: {exc}")
+        return None
+    version = str(payload.get("version", "")).strip()
+    name = str(payload.get("release_name") or payload.get("name") or "").strip()
+    if not version or not name:
+        log("release feed malformed: missing version/name")
+        return None
+    try:
+        version_key(version)
+    except ValueError:
+        log(f"release feed malformed: bad version {version!r}")
+        return None
+    return Release(
+        version=version,
+        name=name,
+        notes_url=payload.get("release_notes_url") or payload.get("notes_url"),
+        iso_url=payload.get("iso_url"),
+        published=payload.get("published"),
+    )
+
+
+def package_updates() -> list[str]:
+    if shutil.which("checkupdates"):
+        cmd = ["checkupdates"]
+    elif shutil.which("pacman"):
+        cmd = ["pacman", "-Qu"]
+    else:
+        return []
+    try:
+        proc = subprocess.run(cmd, text=True, capture_output=True)
+    except OSError:
+        return []
+    # checkupdates exits 2 when there is nothing to do.
+    if proc.returncode not in (0, 2):
+        log(f"package update check failed: {proc.stderr.strip()}")
+        return []
+    return [line for line in proc.stdout.splitlines() if line.strip()]
+
+
+def run_hooks(old: str, new: str, release_name: str) -> None:
+    if not HOOK_DIR.is_dir():
+        return
+    env = os.environ.copy()
+    env["BALIKOS_OLD_VERSION"] = old
+    env["BALIKOS_NEW_VERSION"] = new
+    env["BALIKOS_RELEASE_NAME"] = release_name
+    for hook in sorted(HOOK_DIR.iterdir()):
+        if not hook.is_file() or not os.access(hook, os.X_OK):
+            continue
+        try:
+            subprocess.run([str(hook)], check=True, env=env)
+        except (OSError, subprocess.CalledProcessError) as exc:
+            log(f"update hook failed: {hook}: {exc}")
+
+
+def pacman_update() -> bool:
+    if os.geteuid() != 0:
+        log("refusing pacman update: not root")
+        return False
+    try:
+        subprocess.run(["pacman", "-Syu", "--noconfirm"], check=True)
+        return True
+    except (OSError, subprocess.CalledProcessError) as exc:
+        log(f"pacman update failed: {exc}")
+        return False
+
+
+def save_latest(release: Release) -> None:
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    (STATE_DIR / "latest.json").write_text(
+        json.dumps(release.__dict__, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+
+
+def load_latest() -> Release | None:
+    path = STATE_DIR / "latest.json"
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        return Release(**payload)
+    except (ValueError, TypeError, OSError):
+        return None
+
+
+def check(enabled: bool, cfg: configparser.ConfigParser, force: bool = False) -> int:
+    if not enabled and not force:
+        log("updater disabled by configuration")
+        return 0
+    if snoozed() and not force:
+        log("release notification snoozed")
+        return 0
+
+    local = read_release()
+    local_version = local.get("VERSION", "0.0")
+    feed_url = cfg.get("updater", "feed_url", fallback="")
+    release = fetch_release(feed_url) if feed_url else None
+
+    if release is not None:
+        save_latest(release)
+        try:
+            newer = version_key(release.version) > version_key(local_version)
+        except ValueError:
+            newer = False
+            log(f"local version malformed: {local_version!r}")
+        if newer:
+            notes = release.notes_url or cfg.get("updater", "release_notes_url", fallback="")
+            body = f"Yeni sürüm: {release.name}\nSürüm notları: {notes}"
+            action = notify("BalıkOS güncellemesi hazır", body, actions=True)
+            if action == "update":
+                return apply_release(release)
+            if action == "snooze":
+                save_snooze(int(cfg.get("updater", "snooze_days", fallback="3")))
+            return 0
+        if version_key(release.version) < version_key(local_version):
+            log(f"ignoring downgrade feed {release.version} < {local_version}")
+
+    updates = package_updates()
+    if updates:
+        body = f"{len(updates)} paket güncellemesi var. Güncellemek için tıklayın."
+        action = notify("BalıkOS paket güncellemeleri", body, actions=True)
+        if action == "update":
+            if pacman_update():
+                run_hooks(local_version, local_version, local.get("RELEASE_NAME", "BalıkOS"))
+        elif action == "snooze":
+            save_snooze(int(cfg.get("updater", "snooze_days", fallback="3")))
+        return 0
+
+    log("system is up to date")
+    return 0
+
+
+def apply_release(release: Release | None = None) -> int:
+    if os.geteuid() != 0:
+        os.execvp("pkexec", ["pkexec", sys.argv[0], "--apply"])
+    release = release or load_latest()
+    old = read_release()
+    old_version = old.get("VERSION", "0.0")
+    name = release.name if release else old.get("RELEASE_NAME", "BalıkOS")
+    new_version = release.version if release else old_version
+    if not pacman_update():
+        return 1
+    run_hooks(old_version, new_version, name)
+    log(f"update applied: {old_version} -> {new_version}")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(prog="balikos-updater")
+    parser.add_argument("--apply", action="store_true", help="apply packages and release hooks")
+    parser.add_argument("--check", action="store_true", help="check feed and packages")
+    parser.add_argument("--force", action="store_true", help="ignore snooze/disabled")
+    parser.add_argument("--snooze", nargs="?", type=int, const=3, metavar="DAYS")
+    parser.add_argument("--disable", action="store_true")
+    parser.add_argument("--enable", action="store_true")
+    parser.add_argument("--status", action="store_true")
+    parser.add_argument("--print-feed", action="store_true")
+    args = parser.parse_args()
+    cfg = load_config()
+    enabled = cfg.getboolean("updater", "enabled", fallback=True)
+
+    if args.disable:
+        cfg.set("updater", "enabled", "false")
+        CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with CONFIG_FILE.open("w", encoding="utf-8") as fh:
+            cfg.write(fh)
+        return 0
+    if args.enable:
+        cfg.set("updater", "enabled", "true")
+        with CONFIG_FILE.open("w", encoding="utf-8") as fh:
+            cfg.write(fh)
+        return 0
+    if args.snooze is not None:
+        save_snooze(args.snooze)
+        return 0
+    if args.status:
+        local = read_release()
+        release = load_latest()
+        print(f"local={local.get('VERSION', 'unknown')}")
+        print(f"feed={release.version if release else 'unknown'}")
+        print(f"enabled={'yes' if enabled else 'no'}")
+        print(f"snoozed={'yes' if snoozed() else 'no'}")
+        return 0
+    if args.print_feed:
+        release = fetch_release(cfg.get("updater", "feed_url", fallback=""))
+        if release is None:
+            return 1
+        print(json.dumps(release.__dict__, ensure_ascii=False, indent=2))
+        return 0
+    if args.apply:
+        return apply_release()
+    return check(enabled, cfg, args.force)
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except KeyboardInterrupt:
+        raise SystemExit(130)

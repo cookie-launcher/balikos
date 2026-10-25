@@ -1,0 +1,24 @@
+#!/bin/sh
+# pacman install hook: expose the kernel under /boot and build its initramfs.
+set -eu
+
+find_kver() {
+    for d in /usr/lib/modules/*; do
+        [ -f "$d/pkgbase" ] || continue
+        if [ "$(cat "$d/pkgbase")" = "balikos-kernel" ]; then
+            printf '%s\n' "${d##*/}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+post_install() {
+    kver="$(find_kver)" || return 0
+    install -Dm644 "/usr/lib/modules/${kver}/vmlinuz" /boot/vmlinuz-balikos-kernel
+    if command -v mkinitcpio >/dev/null 2>&1; then
+        mkinitcpio -p balikos-kernel || true
+    fi
+}
+
+post_upgrade() { post_install; }

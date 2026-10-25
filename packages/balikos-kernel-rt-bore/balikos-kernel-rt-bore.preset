@@ -1,0 +1,4 @@
+# mkinitcpio preset for balikos-kernel-rt-bore
+ALL_kver="/boot/vmlinuz-balikos-kernel-rt-bore"
+PRESETS=('default')
+default_image="/boot/initramfs-balikos-kernel-rt-bore.img"

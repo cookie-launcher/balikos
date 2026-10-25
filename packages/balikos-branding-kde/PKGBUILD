@@ -1,0 +1,17 @@
+# Maintainer: BalıkOS contributors
+pkgname=balikos-branding-kde
+pkgver=1.0
+pkgrel=1
+pkgdesc="BalıkOS SDDM and KDE Plasma branding"
+arch=('any')
+url="https://balikos.org"
+license=('MIT')
+depends=('balikos-branding' 'sddm')
+optdepends=('plasma-desktop: KDE Plasma session')
+source=('LICENSE')
+sha256sums=('SKIP')
+
+package() {
+  cp -a "$startdir/files/." "$pkgdir/"
+  install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

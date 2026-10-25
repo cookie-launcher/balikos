@@ -1,0 +1,15 @@
+[General]
+ColorScheme=Balikos
+Name=Balikos
+shadeSortColumn=true
+
+[Icons]
+Theme=breeze-dark
+
+[KDE]
+AnimationDurationFactor=1
+LookAndFeelPackage=org.kde.breezedark.desktop
+SingleClick=false
+
+[Wallpapers]
+usersWallpapers=/usr/share/backgrounds/balikos/wallpaper.png

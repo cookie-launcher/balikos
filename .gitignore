@@ -1,0 +1,14 @@
+work/
+out/
+repo/
+cache/
+*.iso
+*.iso.sha256
+*.pkg.tar.*
+*.db
+*.db.tar.*
+*.files
+*.files.tar.*
+__pycache__/
+*.pyc
+iso/airootfs/var/cache/balikos/

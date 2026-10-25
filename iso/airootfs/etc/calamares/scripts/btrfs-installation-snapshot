@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Only proceed if cachyos-snapper-support is installed (present on all btrfs installs)
+if ! pacman -Qs cachyos-snapper-support > /dev/null 2>&1; then
+    exit 0
+fi
+
+# Create installation snapshot — snapper defaults to no cleanup algorithm,
+# so this snapshot will never be automatically deleted. Used as a restore point.
+# --print-number outputs the snapshot ID so we can save it for later use
+# by restore tooling (e.g. snapper rollback).
+SNAP_ID=$(snapper --no-dbus -c root create --print-number \
+    --description "Fresh CachyOS Installation" \
+    --userdata "important=yes")
+
+mkdir -p /etc/cachyos
+echo "$SNAP_ID" > /etc/cachyos/installation-snapshot

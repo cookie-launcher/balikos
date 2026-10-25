@@ -1,0 +1,40 @@
+title-text: ""
+desktop-image: "background.png"
+desktop-color: "#071a2b"
+terminal-font: "DejaVu Sans Mono Regular 16"
+
++ label {
+    left = 5%
+    top = 5%
+    width = 40%
+    height = 10%
+    text = "BalıkOS"
+    font = "DejaVu Sans Bold 28"
+    color = "#38bdf8"
+    align = "left"
+}
+
++ boot_menu {
+    left = 15%
+    top = 24%
+    width = 70%
+    height = 62%
+    item_height = 40
+    item_padding = 8
+    item_spacing = 4
+    item_font = "DejaVu Sans Regular 16"
+    selected_item_font = "DejaVu Sans Bold 16"
+    item_color = "#e0f2fe"
+    selected_item_color = "#38bdf8"
+}
+
++ label {
+    left = 5%
+    top = 92%
+    width = 90%
+    height = 6%
+    text = "BalıkOS — özgür, hızlı, balık gibi"
+    font = "DejaVu Sans Regular 12"
+    color = "#7dd3fc"
+    align = "left"
+}

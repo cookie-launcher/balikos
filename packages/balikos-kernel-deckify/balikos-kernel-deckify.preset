@@ -1,0 +1,4 @@
+# mkinitcpio preset for balikos-kernel-deckify
+ALL_kver="/boot/vmlinuz-balikos-kernel-deckify"
+PRESETS=('default')
+default_image="/boot/initramfs-balikos-kernel-deckify.img"

@@ -1,0 +1,11 @@
+#!/bin/sh
+# Idempotent post-update hook: record the installed BalıkOS milestone.
+set -eu
+[ -n "${BALIKOS_NEW_VERSION:-}" ] || exit 0
+old="${BALIKOS_OLD_VERSION:-}"
+new="${BALIKOS_NEW_VERSION}"
+name="${BALIKOS_RELEASE_NAME:-BalıkOS ${new}}"
+[ "$old" = "$new" ] && exit 0
+install -d -m 0755 /etc
+printf 'VERSION=%s\nRELEASE_NAME="%s"\n' "$new" "$name" > /etc/balikos-release
+chmod 0644 /etc/balikos-release

@@ -1,0 +1,35 @@
+[Plymouth Theme]
+Name=Balikos
+Description=Balikos boot animation
+ModuleName=two-step
+
+[two-step]
+Font=DejaVu Sans 12
+TitleFont=DejaVu Sans Bold 32
+ImageDir=/usr/share/plymouth/themes/balikos
+DialogHorizontalAlignment=.5
+DialogVerticalAlignment=.5
+TitleHorizontalAlignment=.5
+TitleVerticalAlignment=.382
+HorizontalAlignment=.5
+VerticalAlignment=.5
+Transition=none
+TransitionDuration=0.0
+BackgroundStartColor=0x071a2b
+BackgroundEndColor=0x02060c
+ProgressBarBackgroundColor=0x1e3a5f
+ProgressBarForegroundColor=0x38bdf8
+DialogClearsFirmwareBackground=false
+MessageBelowAnimation=true
+
+[boot-up]
+UseEndAnimation=true
+UseFirmwareBackground=false
+
+[shutdown]
+UseEndAnimation=false
+UseFirmwareBackground=false
+
+[reboot]
+UseEndAnimation=false
+UseFirmwareBackground=false

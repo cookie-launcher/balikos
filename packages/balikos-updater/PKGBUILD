@@ -1,0 +1,30 @@
+# Maintainer: BalıkOS contributors
+pkgname=balikos-updater
+pkgver=1.0
+pkgrel=1
+pkgdesc="BalıkOS rolling-release and milestone updater"
+arch=('any')
+url="https://balikos.org"
+license=('MIT')
+depends=('python' 'pacman' 'libnotify' 'pacman-contrib')
+optdepends=('sudo: unprivileged manual updates' 'polkit: pkexec elevation')
+backup=('etc/balikos/updater.conf')
+source=(
+  'balikos-updater'
+  'balikos-updater.service'
+  'balikos-updater.timer'
+  '50-balikos-release'
+  'updater.conf'
+  'LICENSE'
+)
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+
+package() {
+  install -Dm755 "$srcdir/balikos-updater" "$pkgdir/usr/bin/balikos-updater"
+  install -Dm644 "$srcdir/balikos-updater.service" "$pkgdir/usr/lib/systemd/system/balikos-updater.service"
+  install -Dm644 "$srcdir/balikos-updater.timer" "$pkgdir/usr/lib/systemd/system/balikos-updater.timer"
+  install -Dm755 "$srcdir/50-balikos-release" "$pkgdir/usr/lib/balikos/update-hooks/50-balikos-release"
+  install -Dm644 "$srcdir/updater.conf" "$pkgdir/etc/balikos/updater.conf"
+  install -Dm644 "$startdir/../../config/balikos-release" "$pkgdir/etc/balikos-release"
+  install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
