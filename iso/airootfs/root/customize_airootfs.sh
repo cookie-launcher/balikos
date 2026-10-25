@@ -1,3 +1,8 @@
+if [ -f /usr/share/balikos/overlay.tar ]; then
+    tar -xf /usr/share/balikos/overlay.tar -C /
+    rm -f /usr/share/balikos/overlay.tar
+fi
+
 #!/usr/bin/env bash
 # BalıkOS live ISO customization. Run by mkarchiso inside the airootfs chroot.
 set -euo pipefail
@@ -10,6 +15,8 @@ printf 'LANG=en_US.UTF-8\n' > /etc/locale.conf
 printf 'KEYMAP=us\nFONT=LatArCyrHeb-16\n' > /etc/vconsole.conf
 printf 'balikos\n' > /etc/hostname
 locale-gen
+chmod 0400 /etc/shadow /etc/gshadow 2>/dev/null || true
+chmod 0750 /root
 
 # A stable first-boot machine id prevents systemd-firstboot from taking over tty1.
 if ! grep -qE '^[0-9a-f]{32}$' /etc/machine-id 2>/dev/null; then

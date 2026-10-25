@@ -29,6 +29,12 @@ export BALIKOS_RELEASE_NAME="$RELEASE_NAME"
 export SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(date +%s)}"
 
 mkdir -p "$OUT" "$WORK"
+# Stage BalikOS customizations so they are overlaid after package installation.
+# archiso copies profile/airootfs before pacstrap; package-owned files would
+# otherwise conflict and the custom versions would lose.
+mkdir -p "${PROFILE}/airootfs/usr/share/balikos"
+rm -f "${PROFILE}/airootfs/usr/share/balikos/overlay.tar"
+tar -C "${PROFILE}/airootfs"     --exclude='./etc/passwd' --exclude='./etc/shadow'     --exclude='./etc/group' --exclude='./etc/gshadow'     -cf "${PROFILE}/airootfs/usr/share/balikos/overlay.tar" .
 if [[ ! -f "${REPO_DIR}/x86_64/balikos.db.tar.zst" ]]; then
     die "local package repository is missing; run scripts/build-packages.sh first"
 fi
