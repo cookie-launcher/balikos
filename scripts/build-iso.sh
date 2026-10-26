@@ -29,12 +29,6 @@ export BALIKOS_RELEASE_NAME="$RELEASE_NAME"
 export SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(date +%s)}"
 
 mkdir -p "$OUT" "$WORK"
-# Stage BalikOS customizations so they are overlaid after package installation.
-# archiso copies profile/airootfs before pacstrap; package-owned files would
-# otherwise conflict and the custom versions would lose.
-mkdir -p "${PROFILE}/airootfs/usr/share/balikos"
-rm -f "${PROFILE}/airootfs/usr/share/balikos/overlay.tar"
-tar -C "${PROFILE}/airootfs"     --exclude='./etc/passwd' --exclude='./etc/shadow'     --exclude='./etc/group' --exclude='./etc/gshadow'     -cf "${PROFILE}/airootfs/usr/share/balikos/overlay.tar" .
 if [[ ! -f "${REPO_DIR}/x86_64/balikos.db.tar.zst" ]]; then
     die "local package repository is missing; run scripts/build-packages.sh first"
 fi
@@ -44,6 +38,21 @@ fi
 install -d "${PROFILE}/airootfs/var/cache/balikos/repo/x86_64"
 find "${PROFILE}/airootfs/var/cache/balikos/repo" -type f -delete
 cp -a "${REPO_DIR}/x86_64/." "${PROFILE}/airootfs/var/cache/balikos/repo/x86_64/"
+
+# archiso copies profile/airootfs before pacstrap; package-owned files would then
+# conflict.  Overlay the profile after package installation so BalikOS files win.
+python3 - <<'PYTHON'
+from pathlib import Path
+path = Path("/usr/bin/mkarchiso")
+text = path.read_text()
+if "_run_once _make_custom_airootfs" in text:
+    text = text.replace("_run_once _make_custom_airootfs\n", "")
+old = '    _msg_info "Done! Packages installed successfully."'
+new = old + '\n    # Overlay BalikOS custom airootfs files after package installation\n    _unshare cp -af --no-preserve=ownership,mode -- "${profile}/airootfs/." "${pacstrap_dir}"'
+if old not in text:
+    raise SystemExit("mkarchiso hook point not found")
+path.write_text(text.replace(old, new, 1))
+PYTHON
 
 log "serving local repository on 127.0.0.1:${PORT}"
 python3 -m http.server "$PORT" --bind 127.0.0.1 --directory "$REPO_DIR" >/tmp/balikos-repo-http.log 2>&1 &
@@ -60,3 +69,6 @@ log "ISO: $ISO"
 sha256sum "$ISO" > "${ISO}.sha256"
 log "SHA256: $(cut -d' ' -f1 "${ISO}.sha256")"
 "$(dirname -- "$0")/render-release-json.sh" "$ISO"
+EOF
+chmod +x scripts/build-iso.sh
+bash -n scripts/build-iso.sh && echo build_ok
