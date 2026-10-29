@@ -1,8 +1,3 @@
-if [ -f /usr/share/balikos/overlay.tar ]; then
-    tar -xf /usr/share/balikos/overlay.tar -C /
-    rm -f /usr/share/balikos/overlay.tar
-fi
-
 #!/usr/bin/env bash
 # BalıkOS live ISO customization. Run by mkarchiso inside the airootfs chroot.
 set -euo pipefail

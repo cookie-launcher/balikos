@@ -29,6 +29,11 @@ export BALIKOS_RELEASE_NAME="$RELEASE_NAME"
 export SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(date +%s)}"
 
 mkdir -p "$OUT" "$WORK"
+# Stage BalikOS customizations.  They are extracted after package installation
+# so package-owned defaults cannot conflict with or overwrite them.
+mkdir -p "${PROFILE}/airootfs/usr/share/balikos"
+rm -f "${PROFILE}/airootfs/usr/share/balikos/overlay.tar"
+tar -C "${REPO_ROOT}/iso/overlay" -cf "${PROFILE}/airootfs/usr/share/balikos/overlay.tar" .
 if [[ ! -f "${REPO_DIR}/x86_64/balikos.db.tar.zst" ]]; then
     die "local package repository is missing; run scripts/build-packages.sh first"
 fi
@@ -45,14 +50,10 @@ python3 - <<'PYTHON'
 from pathlib import Path
 path = Path("/usr/bin/mkarchiso")
 text = path.read_text()
-old = '_pacstrap_options=(-C "${work_dir}/${buildmode}.pacman.conf" -c -G -M -- "${pacstrap_dir}" "${buildmode_pkg_list[@]}")'
-new = '_pacstrap_options=(-C "${work_dir}/${buildmode}.pacman.conf" -c -G -M --overwrite "*" -- "${pacstrap_dir}" "${buildmode_pkg_list[@]}")'
-if old in text:
+old = '    _msg_info "Done! Packages installed successfully."'
+new = old + "\n    # Overlay BalikOS custom airootfs files after package installation\n    if [[ -f \"${pacstrap_dir}/usr/share/balikos/overlay.tar\" ]]; then\n        _unshare tar -xf \"${pacstrap_dir}/usr/share/balikos/overlay.tar\" -C \"${pacstrap_dir}\"\n        _unshare rm -f \"${pacstrap_dir}/usr/share/balikos/overlay.tar\"\n    fi"
+if old in text and "Overlay BalikOS custom airootfs files after package installation" not in text:
     text = text.replace(old, new, 1)
-old2 = '    _msg_info "Done! Packages installed successfully."'
-new2 = old2 + "\n    # Overlay BalikOS custom airootfs files after package installation\n    _unshare cp -af --no-preserve=ownership,mode -- \"${profile}/airootfs/.\" \"${pacstrap_dir}\""
-if old2 in text and "Overlay BalikOS custom airootfs files after package installation" not in text:
-    text = text.replace(old2, new2, 1)
 path.write_text(text)
 PYTHON
 
