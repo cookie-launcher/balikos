@@ -45,13 +45,15 @@ python3 - <<'PYTHON'
 from pathlib import Path
 path = Path("/usr/bin/mkarchiso")
 text = path.read_text()
-if "_run_once _make_custom_airootfs" in text:
-    text = text.replace("_run_once _make_custom_airootfs\n", "")
-old = '    _msg_info "Done! Packages installed successfully."'
-new = old + '\n    # Overlay BalikOS custom airootfs files after package installation\n    _unshare cp -af --no-preserve=ownership,mode -- "${profile}/airootfs/." "${pacstrap_dir}"'
-if old not in text:
-    raise SystemExit("mkarchiso hook point not found")
-path.write_text(text.replace(old, new, 1))
+old = '_pacstrap_options=(-C "${work_dir}/${buildmode}.pacman.conf" -c -G -M -- "${pacstrap_dir}" "${buildmode_pkg_list[@]}")'
+new = '_pacstrap_options=(-C "${work_dir}/${buildmode}.pacman.conf" -c -G -M --overwrite "*" -- "${pacstrap_dir}" "${buildmode_pkg_list[@]}")'
+if old in text:
+    text = text.replace(old, new, 1)
+old2 = '    _msg_info "Done! Packages installed successfully."'
+new2 = old2 + "\n    # Overlay BalikOS custom airootfs files after package installation\n    _unshare cp -af --no-preserve=ownership,mode -- \"${profile}/airootfs/.\" \"${pacstrap_dir}\""
+if old2 in text and "Overlay BalikOS custom airootfs files after package installation" not in text:
+    text = text.replace(old2, new2, 1)
+path.write_text(text)
 PYTHON
 
 log "serving local repository on 127.0.0.1:${PORT}"
