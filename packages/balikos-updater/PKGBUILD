@@ -25,6 +25,5 @@ package() {
   install -Dm644 "$srcdir/balikos-updater.timer" "$pkgdir/usr/lib/systemd/system/balikos-updater.timer"
   install -Dm755 "$srcdir/50-balikos-release" "$pkgdir/usr/lib/balikos/update-hooks/50-balikos-release"
   install -Dm644 "$srcdir/updater.conf" "$pkgdir/etc/balikos/updater.conf"
-  install -Dm644 "$startdir/../../config/balikos-release" "$pkgdir/etc/balikos-release"
   install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }

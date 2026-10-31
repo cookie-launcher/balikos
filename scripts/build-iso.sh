@@ -23,7 +23,6 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 # Make the repository version and the ISO's /etc/balikos-release identical.
-install -Dm644 "${CONFIG_FILE}" "${PROFILE}/airootfs/etc/balikos-release"
 export BALIKOS_VERSION="$VERSION"
 export BALIKOS_RELEASE_NAME="$RELEASE_NAME"
 export SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(date +%s)}"
